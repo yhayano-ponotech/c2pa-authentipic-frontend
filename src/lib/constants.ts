@@ -1,9 +1,6 @@
-import path from "path";
-import os from "os";
-
 // 一時ファイルディレクトリのパス
-// デフォルトではシステムの一時ディレクトリ内に専用フォルダを作成
-export const TEMP_DIR = process.env.TEMP_DIR || path.join(os.tmpdir(), 'c2pa-web-app-temp');
+// サーバー側の一時ディレクトリを使用
+export const TEMP_DIR = process.env.TEMP_DIR || './tmp/c2pa-web-app-temp';
 
 // 一時ファイルの保持期間（24時間、ミリ秒単位）
 export const TEMP_FILE_TTL = 24 * 60 * 60 * 1000;
@@ -64,45 +61,6 @@ export const SUPPORTED_IMAGE_FORMATS = [
 
 // アップロードファイルの最大サイズ（10MB）
 export const MAX_UPLOAD_SIZE = 10 * 1024 * 1024;
-
-// C2PAのアクションタイプ
-export const C2PA_ACTION_TYPES = [
-  {
-    value: 'c2pa.created',
-    label: '作成'
-  },
-  {
-    value: 'c2pa.edited',
-    label: '編集'
-  },
-  {
-    value: 'c2pa.reviewed',
-    label: 'レビュー'
-  },
-  {
-    value: 'c2pa.converted',
-    label: '変換'
-  },
-  {
-    value: 'c2pa.cropped',
-    label: 'トリミング'
-  },
-  {
-    value: 'c2pa.filtered',
-    label: 'フィルター適用'
-  },
-  {
-    value: 'c2pa.published',
-    label: '公開'
-  }
-];
-
-// C2PAの検証ステータス
-export const C2PA_VALIDATION_STATUS = {
-  VALID: 'valid',
-  INVALID: 'invalid',
-  WARNING: 'warning'
-};
 
 // アプリケーション情報
 export const APP_INFO = {

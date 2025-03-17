@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { promises as fs } from "fs";
-import path from "path";
 import { createC2pa } from "c2pa-node";
-import { getTempFilePath, isValidFileId } from "@/lib/utils";
+import { getTempFilePath, isValidFileId, getMimeType } from "@/lib/utils";
 
 export async function POST(request: NextRequest) {
   try {
@@ -40,9 +39,8 @@ export async function POST(request: NextRequest) {
     // ファイルの読み込み
     const buffer = await fs.readFile(tempFilePath);
 
-    // MIMEタイプを拡張子から推測
-    const extension = path.extname(tempFilePath).toLowerCase();
-    const mimeType = getMimeType(extension);
+    // MIMEタイプを取得
+    const mimeType = getMimeType(fileId);
 
     if (!mimeType) {
       return NextResponse.json(
@@ -84,11 +82,9 @@ export async function POST(request: NextRequest) {
       isValid = true;
       status = "valid";
     } else if (validation_status === "invalid") {
-      // 具体的なエラー情報を抽出（可能であれば）
+      // 具体的なエラー情報を抽出
       errors.push("C2PA署名が無効です。");
       if (result.validation_errors) {
-        // 本来はここでresult.validation_errorsからエラー詳細を抽出
-        // 現在のc2pa-nodeではこの詳細情報は限られている可能性があります
         if (Array.isArray(result.validation_errors)) {
           errors = errors.concat(result.validation_errors);
         }
@@ -104,11 +100,11 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // 詳細な検証情報を生成
+    // 検証の詳細情報を生成
     const details = {
       validationType: validation_status,
       activeManifest: result.active_manifest,
-      // その他の検証詳細情報
+      // その他の検証詳細情報があれば追加
     };
 
     return NextResponse.json({
@@ -133,22 +129,4 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-}
-
-// 拡張子からMIMEタイプを取得する関数
-function getMimeType(extension: string): string | null {
-  const mimeTypes: { [key: string]: string } = {
-    ".jpg": "image/jpeg",
-    ".jpeg": "image/jpeg",
-    ".png": "image/png",
-    ".webp": "image/webp",
-    ".gif": "image/gif",
-    ".tif": "image/tiff",
-    ".tiff": "image/tiff",
-    ".avif": "image/avif",
-    ".heic": "image/heic",
-    ".heif": "image/heif",
-  };
-
-  return mimeTypes[extension] || null;
 }

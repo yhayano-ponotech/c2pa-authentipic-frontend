@@ -45,62 +45,39 @@ export default function FileUpload({
   const [c2paData, setC2paData] = useState<C2paManifestData | null>(null);
   const [hasC2pa, setHasC2pa] = useState<boolean | null>(null);
 
-  // ファイルドロップ処理
-  const onDrop = useCallback((acceptedFiles: File[]) => {
-    if (acceptedFiles.length === 0) return;
+  // C2PAデータ取得
+  const fetchC2paData = useCallback(async (fileId: string) => {
+    setLoading(true);
     
-    const selectedFile = acceptedFiles[0];
-    
-    // ファイルサイズチェック
-    if (selectedFile.size > maxSize) {
-      setUploadError(`ファイルサイズが大きすぎます。最大${maxSize / (1024 * 1024)}MBまでのファイルを選択してください。`);
-      return;
+    try {
+      const response = await fetch('/api/c2pa/read', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ fileId }),
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        setHasC2pa(data.hasC2pa);
+        if (data.hasC2pa) {
+          setC2paData(data.manifest);
+        }
+      } else {
+        setUploadError(data.error || 'C2PAデータの読み取り中にエラーが発生しました。');
+      }
+    } catch (error) {
+      console.error('C2PAデータ読み取りエラー:', error);
+      setUploadError('C2PAデータの読み取り中にエラーが発生しました。もう一度お試しください。');
+    } finally {
+      setLoading(false);
     }
-    
-    // MIMEタイプチェック
-    const validImageTypes = [
-      'image/jpeg', 'image/png', 'image/webp', 'image/tiff', 
-      'image/avif', 'image/heic', 'image/gif'
-    ];
-    
-    if (!validImageTypes.includes(selectedFile.type)) {
-      setUploadError('サポートされていないファイル形式です。JPG、PNG、WEBP、TIFF、AVIF、HEIC、GIFのいずれかを選択してください。');
-      return;
-    }
-    
-    // エラーをリセット
-    setUploadError(null);
-    setFile(selectedFile);
-    
-    // プレビュー用のURL生成
-    const objectUrl = URL.createObjectURL(selectedFile);
-    setPreview(objectUrl);
-    
-    // ファイルアップロード開始
-    handleUpload(selectedFile);
-    
-    return () => {
-      // クリーンアップ
-      URL.revokeObjectURL(objectUrl);
-    };
-  }, [maxSize]);
-
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    onDrop,
-    accept: {
-      'image/jpeg': ['.jpg', '.jpeg'],
-      'image/png': ['.png'],
-      'image/webp': ['.webp'],
-      'image/tiff': ['.tif', '.tiff'],
-      'image/avif': ['.avif'],
-      'image/heic': ['.heic'],
-      'image/gif': ['.gif']
-    },
-    maxFiles: 1
-  });
+  }, []);
 
   // ファイルアップロード処理
-  const handleUpload = async (fileToUpload: File) => {
+  const handleUpload = useCallback(async (fileToUpload: File) => {
     setUploading(true);
     setUploadProgress(0);
     
@@ -146,38 +123,61 @@ export default function FileUpload({
     } finally {
       setUploading(false);
     }
-  };
+  }, [actionMode, onFileSelected, fetchC2paData]);
 
-  // C2PAデータ取得
-  const fetchC2paData = async (fileId: string) => {
-    setLoading(true);
+  // ファイルドロップ処理
+  const onDrop = useCallback((acceptedFiles: File[]) => {
+    if (acceptedFiles.length === 0) return;
     
-    try {
-      const response = await fetch('/api/c2pa/read', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ fileId }),
-      });
-      
-      const data = await response.json();
-      
-      if (data.success) {
-        setHasC2pa(data.hasC2pa);
-        if (data.hasC2pa) {
-          setC2paData(data.manifest);
-        }
-      } else {
-        setUploadError(data.error || 'C2PAデータの読み取り中にエラーが発生しました。');
-      }
-    } catch (error) {
-      console.error('C2PAデータ読み取りエラー:', error);
-      setUploadError('C2PAデータの読み取り中にエラーが発生しました。もう一度お試しください。');
-    } finally {
-      setLoading(false);
+    const selectedFile = acceptedFiles[0];
+    
+    // ファイルサイズチェック
+    if (selectedFile.size > maxSize) {
+      setUploadError(`ファイルサイズが大きすぎます。最大${maxSize / (1024 * 1024)}MBまでのファイルを選択してください。`);
+      return;
     }
-  };
+    
+    // MIMEタイプチェック
+    const validImageTypes = [
+      'image/jpeg', 'image/png', 'image/webp', 'image/tiff', 
+      'image/avif', 'image/heic', 'image/gif'
+    ];
+    
+    if (!validImageTypes.includes(selectedFile.type)) {
+      setUploadError('サポートされていないファイル形式です。JPG、PNG、WEBP、TIFF、AVIF、HEIC、GIFのいずれかを選択してください。');
+      return;
+    }
+    
+    // エラーをリセット
+    setUploadError(null);
+    setFile(selectedFile);
+    
+    // プレビュー用のURL生成
+    const objectUrl = URL.createObjectURL(selectedFile);
+    setPreview(objectUrl);
+    
+    // ファイルアップロード開始
+    handleUpload(selectedFile);
+    
+    return () => {
+      // クリーンアップ
+      URL.revokeObjectURL(objectUrl);
+    };
+  }, [handleUpload, maxSize]);
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    accept: {
+      'image/jpeg': ['.jpg', '.jpeg'],
+      'image/png': ['.png'],
+      'image/webp': ['.webp'],
+      'image/tiff': ['.tif', '.tiff'],
+      'image/avif': ['.avif'],
+      'image/heic': ['.heic'],
+      'image/gif': ['.gif']
+    },
+    maxFiles: 1
+  });
 
   // コンポーネントのクリーンアップ
   useEffect(() => {

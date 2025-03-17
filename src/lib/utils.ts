@@ -1,6 +1,5 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
-import path from "path";
 import crypto from "crypto";
 import { TEMP_DIR } from "./constants";
 
@@ -49,31 +48,55 @@ export function getTempFilePath(fileId: string): string {
   if (!isValidFileId(fileId)) {
     throw new Error("無効なファイルIDです。");
   }
-  return path.join(TEMP_DIR, fileId);
+  // パスの結合をスラッシュで行う
+  return `${TEMP_DIR}/${fileId}`;
 }
 
 /**
  * 日付をフォーマットする関数
  */
 export function formatDate(dateString: string): string {
-    if (!dateString) {
-      return "日時情報なし";
-    }
-    
-    const date = new Date(dateString);
-    
-    if (isNaN(date.getTime())) {
-      return "無効な日付";
-    }
-    
-    return date.toLocaleString("ja-JP", {
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-    });
+  if (!dateString) {
+    return "日時情報なし";
+  }
+  
+  const date = new Date(dateString);
+  
+  if (isNaN(date.getTime())) {
+    return "無効な日付";
+  }
+  
+  return date.toLocaleString("ja-JP", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
+}
+
+/**
+ * ファイルの拡張子からMIMEタイプを取得する関数
+ */
+export function getMimeType(filename: string): string | null {
+  const extension = filename.toLowerCase().split('.').pop();
+  if (!extension) return null;
+
+  const mimeTypes: { [key: string]: string } = {
+    "jpg": "image/jpeg",
+    "jpeg": "image/jpeg",
+    "png": "image/png",
+    "webp": "image/webp",
+    "gif": "image/gif",
+    "tif": "image/tiff",
+    "tiff": "image/tiff",
+    "avif": "image/avif",
+    "heic": "image/heic",
+    "heif": "image/heif",
+  };
+
+  return mimeTypes[extension] || null;
 }
 
 /**
@@ -95,7 +118,6 @@ export function formatBytes(bytes: number, decimals = 2): string {
  * C2PAマニフェストのラベルを人間が読みやすい形式に変換する関数
  */
 export function formatC2paLabel(label: string): string {
-  // 一般的なC2PAラベルの対応表
   const labelMap: { [key: string]: string } = {
     "c2pa.actions": "アクション",
     "c2pa.metadata": "メタデータ",
@@ -109,6 +131,5 @@ export function formatC2paLabel(label: string): string {
     "stds.xmp.media-management": "メディア管理",
   };
 
-  // ラベルがマップにある場合はそれを使用、なければラベルをそのまま返す
   return labelMap[label] || label;
 }

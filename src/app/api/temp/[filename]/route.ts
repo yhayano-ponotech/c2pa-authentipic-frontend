@@ -3,13 +3,17 @@ import { promises as fs } from "fs";
 import path from "path";
 import { getTempFilePath, isValidFileId } from "@/lib/utils";
 
+interface PageProps {
+    params: Promise<{ filename: string }>;
+  }
+
 // 一時ファイルを提供するためのAPI
 export async function GET(
   request: NextRequest,
-  { params }: { params: { filename: string } }
+  { params }: PageProps
 ) {
   try {
-    const { filename } = params;
+    const { filename } = await params;
 
     // ファイル名のバリデーション
     if (!filename || !isValidFileId(filename)) {

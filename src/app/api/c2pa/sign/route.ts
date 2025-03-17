@@ -3,6 +3,7 @@ import { promises as fs } from "fs";
 import path from "path";
 import { createC2pa, createTestSigner, ManifestBuilder } from "c2pa-node";
 import { getTempFilePath, isValidFileId, generateUniqueId } from "@/lib/utils";
+import { TEMP_DIR } from "@/lib/constants";
 
 export async function POST(request: NextRequest) {
   try {
@@ -48,13 +49,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 出力ファイルのパスを生成
-    const tempDir = path.dirname(tempFilePath);
-    const extension = path.extname(tempFilePath);
-    const outputFileName = `signed_${generateUniqueId()}${extension}`;
-    const outputPath = path.join(tempDir, outputFileName);
+    // ファイル拡張子を抽出
+    const extension = fileId.substring(fileId.lastIndexOf('.'));
 
-    // MIMEタイプを拡張子から推測
+    // 出力ファイル名を生成
+    const outputFileName = `signed_${generateUniqueId()}${extension}`;
+    const outputPath = path.join(TEMP_DIR, outputFileName);
+
+    // MIMEタイプを拡張子から決定
     const mimeType = getMimeType(extension);
 
     if (!mimeType) {
@@ -112,14 +114,21 @@ export async function POST(request: NextRequest) {
     };
 
     // 署名を実行
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { signedAsset } = await c2pa.sign({
-      asset,
-      manifest,
-      options: {
-        outputPath,
-      },
-    });
+    try {
+      await c2pa.sign({
+        asset,
+        manifest,
+        options: {
+          outputPath,
+        },
+      });
+    } catch (error) {
+      console.error("署名実行エラー:", error);
+      return NextResponse.json({
+        success: false,
+        error: "署名処理に失敗しました。",
+      }, { status: 500 });
+    }
 
     // ダウンロードURLを生成
     const baseUrl = new URL(request.url).origin;
@@ -158,5 +167,5 @@ function getMimeType(extension: string): string | null {
     ".heif": "image/heif",
   };
 
-  return mimeTypes[extension] || null;
+  return mimeTypes[extension.toLowerCase()] || null;
 }

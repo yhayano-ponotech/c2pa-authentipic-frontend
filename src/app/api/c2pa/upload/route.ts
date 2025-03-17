@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
     try {
       await fs.access(TEMP_DIR);
     } catch (error) {
-      console.error("一時ディレクトリの作成に失敗しました:", error);
+      console.error("一時ディレクトリを作成します:", error);
       await mkdir(TEMP_DIR, { recursive: true });
     }
 

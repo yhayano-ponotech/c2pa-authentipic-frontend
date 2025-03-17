@@ -21,6 +21,7 @@ import {
   CheckCircle2, 
   XCircle, 
   AlertTriangle, 
+  AlertCircle,
   Clock, 
   FileText, 
   User, 
@@ -33,6 +34,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatDate } from "@/lib/utils";
 import { C2paManifestData, C2paAssertion, C2paIngredient } from "@/lib/types";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 interface ManifestViewerProps {
   manifest: C2paManifestData;
@@ -51,11 +53,33 @@ interface StatusBadge {
 export default function ManifestViewer({ manifest }: ManifestViewerProps) {
   const [showRawData, setShowRawData] = useState(false);
 
+  // マニフェストデータが存在しない場合のエラー表示
   if (!manifest) {
-    return null;
+    return (
+      <Alert variant="destructive">
+        <AlertCircle className="h-4 w-4" />
+        <AlertTitle>エラー</AlertTitle>
+        <AlertDescription>
+          マニフェストデータが見つかりません。
+        </AlertDescription>
+      </Alert>
+    );
   }
 
   const { active_manifest, manifests, validation_status } = manifest;
+
+  // マニフェストマップが存在しない場合のエラー表示
+  if (!manifests || !active_manifest || !manifests[active_manifest]) {
+    return (
+      <Alert variant="destructive">
+        <AlertCircle className="h-4 w-4" />
+        <AlertTitle>エラー</AlertTitle>
+        <AlertDescription>
+          マニフェストデータの形式が不正です。
+        </AlertDescription>
+      </Alert>
+    );
+  }
 
   // 検証ステータスに基づくバッジの色とアイコンを決定
   const getStatusBadge = (status: string): StatusBadge => {
@@ -94,9 +118,9 @@ export default function ManifestViewer({ manifest }: ManifestViewerProps) {
     timestamp: string;
   }
 
-  // マニフェストの基本情報を整理
+  // マニフェストの基本情報を整理（デフォルト値を設定）
   const manifestInfo: ManifestInfo = {
-    title: activeManifestData.title || "不明",
+    title: activeManifestData.title || "タイトルなし",
     generator: activeManifestData.claim_generator || "不明",
     format: activeManifestData.format || "不明",
     timestamp: typeof activeManifestData.claim_timestamp === 'string' 

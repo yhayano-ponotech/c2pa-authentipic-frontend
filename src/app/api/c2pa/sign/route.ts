@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { promises as fs } from "fs";
 import path from "path";
 import { TEMP_DIR } from "@/lib/constants";
-import { getTempFilePath, isValidFileId, generateUniqueId } from "@/lib/utils";
+import { getTempFilePath, isValidFileId, generateUniqueId, getMimeType } from "@/lib/utils";
 
 // c2pa-nodeモジュールをダイナミックインポートで遅延ロード
 // これによりビルド時のエラーを避ける
@@ -21,6 +21,9 @@ export async function POST(request: NextRequest) {
     // リクエストボディを取得
     const body = await request.json();
     const { fileId, manifestData } = body;
+
+    console.log("受信したリクエストボディ:", JSON.stringify(body, null, 2));
+    console.log("manifestDataの内容:", JSON.stringify(manifestData, null, 2));
 
     // fileIdのバリデーション
     if (!fileId || !isValidFileId(fileId)) {
@@ -179,22 +182,4 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-}
-
-// 拡張子からMIMEタイプを取得する関数
-function getMimeType(extension: string): string | null {
-  const mimeTypes: { [key: string]: string } = {
-    ".jpg": "image/jpeg",
-    ".jpeg": "image/jpeg",
-    ".png": "image/png",
-    ".webp": "image/webp",
-    ".gif": "image/gif",
-    ".tif": "image/tiff",
-    ".tiff": "image/tiff",
-    ".avif": "image/avif",
-    ".heic": "image/heic",
-    ".heif": "image/heif",
-  };
-
-  return mimeTypes[extension.toLowerCase()] || null;
 }

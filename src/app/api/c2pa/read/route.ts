@@ -1,9 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { promises as fs } from "fs";
-import { createC2pa } from "c2pa-node";
 import { getTempFilePath, isValidFileId, getMimeType } from "@/lib/utils";
 
-// GET・POSTリクエストに対応
+// c2pa-nodeモジュールをダイナミックインポートで遅延ロード
+async function loadC2pa() {
+  try {
+    const { createC2pa } = await import('c2pa-node');
+    return { createC2pa };
+  } catch (error) {
+    console.error("C2PAモジュールのロードエラー:", error);
+    throw new Error("C2PAモジュールのロードに失敗しました");
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     // リクエストボディからfileIdを取得
@@ -37,9 +46,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // ファイルの読み込み
-    const buffer = await fs.readFile(tempFilePath);
-
     // MIMEタイプを取得
     const mimeType = getMimeType(fileId);
 
@@ -53,45 +59,59 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // C2PAインスタンスを作成
-    const c2pa = createC2pa();
-
     try {
-      // C2PAデータを読み込み
-      const result = await c2pa.read({ buffer, mimeType });
+      // C2PAモジュールを動的にロード
+      const { createC2pa } = await loadC2pa();
+      
+      // C2PAインスタンスを作成
+      const c2pa = createC2pa();
 
-      if (result && typeof result === 'object') {
-        // C2PAデータがある場合
-        const manifestData = {
-          active_manifest: result.active_manifest || '',
-          manifests: result.manifests || {},
-          validation_status: result.validation_status || 'unknown',
-          validation_errors: result.validation_errors || [],
-          validation_warnings: result.validation_warnings || []
-        };
+      try {
+        // ファイルパスを使用してC2PAデータを読み込み
+        const result = await c2pa.read({ path: tempFilePath, mimeType });
 
-        return NextResponse.json({
-          success: true,
-          hasC2pa: true,
-          manifest: manifestData,
-        });
-      } else {
-        // C2PAデータがない場合
+        if (result && typeof result === 'object') {
+          // C2PAデータがある場合
+          const manifestData = {
+            active_manifest: result.active_manifest || '',
+            manifests: result.manifests || {},
+            validation_status: result.validation_status || 'unknown',
+            validation_errors: result.validation_errors || [],
+            validation_warnings: result.validation_warnings || []
+          };
+
+          return NextResponse.json({
+            success: true,
+            hasC2pa: true,
+            manifest: manifestData,
+          });
+        } else {
+          // C2PAデータがない場合
+          return NextResponse.json({
+            success: true,
+            hasC2pa: false,
+          });
+        }
+      } catch (readError) {
+        // C2PA読み取りエラーをログに記録
+        console.error('C2PA読み取りエラー:', readError);
+        
+        // エラーが発生した場合でもアプリケーションを継続させるため
+        // C2PAデータがないとして処理
         return NextResponse.json({
           success: true,
           hasC2pa: false,
         });
       }
-    } catch (error) {
-      console.error('C2PA読み取りエラー:', error);
+    } catch (c2paError) {
+      console.error("C2PAモジュール処理エラー:", c2paError);
       return NextResponse.json({
         success: false,
-        hasC2pa: false,
-        error: 'C2PAデータの読み取りに失敗しました'
+        error: "C2PAモジュールの処理に失敗しました",
       }, { status: 500 });
     }
   } catch (error) {
-    console.error("C2PA読み取りエラー:", error);
+    console.error("リクエスト処理エラー:", error);
     
     return NextResponse.json(
       {

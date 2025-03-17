@@ -3,7 +3,6 @@ import { promises as fs } from "fs";
 import path from "path";
 import { createC2pa, createTestSigner, ManifestBuilder } from "c2pa-node";
 import { getTempFilePath, isValidFileId, generateUniqueId } from "@/lib/utils";
-import { addAssertion } from "@/lib/c2pa/manifest-utils";
 
 export async function POST(request: NextRequest) {
   try {
@@ -74,35 +73,38 @@ export async function POST(request: NextRequest) {
     // C2PAインスタンスを作成
     const c2pa = createC2pa({ signer });
 
-    // マニフェストビルダーを作成
-    const manifest = new ManifestBuilder({
-      claim_generator: manifestData.claimGenerator || "c2pa-web-app/1.0.0",
-      format: manifestData.format || mimeType,
-      title: manifestData.title,
-      assertions: manifestData.assertions || [],
-    });
+    // 基本アサーションの準備
+    const assertions = manifestData.assertions ? [...manifestData.assertions] : [];
 
-    // 追加のメタデータがあれば設定
+    // 追加メタデータがあれば設定
     if (manifestData.creator) {
-      manifest.addAssertion({
+      assertions.push({
         label: "dc.creator",
         data: manifestData.creator,
       });
     }
 
     if (manifestData.copyright) {
-      manifest.addAssertion({
+      assertions.push({
         label: "dc.rights",
         data: manifestData.copyright,
       });
     }
 
     if (manifestData.description) {
-      manifest.addAssertion({
+      assertions.push({
         label: "dc.description",
         data: manifestData.description,
       });
     }
+
+    // マニフェストビルダーを作成
+    const manifest = new ManifestBuilder({
+      claim_generator: manifestData.claimGenerator || "c2pa-web-app/1.0.0",
+      format: manifestData.format || mimeType,
+      title: manifestData.title,
+      assertions: assertions,
+    });
 
     // アセットを準備
     const asset = {

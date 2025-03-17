@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { 
   Accordion, 
   AccordionContent, 
@@ -38,6 +38,16 @@ interface ManifestViewerProps {
   manifest: C2paManifestData;
 }
 
+// バッジのバリアント型
+type BadgeVariant = "default" | "destructive" | "outline" | "secondary";
+
+// ステータスバッジ情報の型
+interface StatusBadge {
+  color: BadgeVariant;
+  icon: React.ReactNode;
+  text: string;
+}
+
 export default function ManifestViewer({ manifest }: ManifestViewerProps) {
   const [showRawData, setShowRawData] = useState(false);
 
@@ -48,11 +58,11 @@ export default function ManifestViewer({ manifest }: ManifestViewerProps) {
   const { active_manifest, manifests, validation_status } = manifest;
 
   // 検証ステータスに基づくバッジの色とアイコンを決定
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (status: string): StatusBadge => {
     switch (status) {
       case "valid":
         return {
-          color: "success",
+          color: "secondary",
           icon: <CheckCircle2 className="h-4 w-4 mr-1" />,
           text: "有効"
         };
@@ -64,7 +74,7 @@ export default function ManifestViewer({ manifest }: ManifestViewerProps) {
         };
       default:
         return {
-          color: "warning",
+          color: "outline",
           icon: <AlertTriangle className="h-4 w-4 mr-1" />,
           text: "警告あり"
         };
@@ -76,12 +86,22 @@ export default function ManifestViewer({ manifest }: ManifestViewerProps) {
   // アクティブなマニフェストデータを取得
   const activeManifestData = manifests[active_manifest];
 
+  // マニフェストの基本情報の型を定義
+  interface ManifestInfo {
+    title: string;
+    generator: string;
+    format: string;
+    timestamp: string;
+  }
+
   // マニフェストの基本情報を整理
-  const manifestInfo = {
+  const manifestInfo: ManifestInfo = {
     title: activeManifestData.title || "不明",
     generator: activeManifestData.claim_generator || "不明",
     format: activeManifestData.format || "不明",
-    timestamp: activeManifestData.claim_timestamp || null
+    timestamp: typeof activeManifestData.claim_timestamp === 'string' 
+      ? activeManifestData.claim_timestamp 
+      : ""
   };
 
   // アサーション（特定のデータ）を整理
@@ -93,13 +113,18 @@ export default function ManifestViewer({ manifest }: ManifestViewerProps) {
   // 材料（Ingredient）情報を整理
   const ingredients = activeManifestData.ingredients || [];
 
+  // タイムスタンプの表示用フォーマット
+  const formattedTimestamp = typeof manifestInfo.timestamp === 'string' && manifestInfo.timestamp.length > 0
+    ? formatDate(manifestInfo.timestamp) 
+    : "タイムスタンプなし";
+
   return (
     <div className="space-y-6">
       {/* 基本情報カード */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between py-4">
           <CardTitle className="text-xl">マニフェスト情報</CardTitle>
-          <Badge variant={statusBadge.color as "success" | "destructive" | "warning"} className="text-xs flex items-center">
+          <Badge variant={statusBadge.color} className="text-xs flex items-center">
             {statusBadge.icon}
             {statusBadge.text}
           </Badge>
@@ -124,13 +149,11 @@ export default function ManifestViewer({ manifest }: ManifestViewerProps) {
                 <span className="text-sm font-medium">生成ツール:</span>
                 <span className="ml-2">{manifestInfo.generator}</span>
               </div>
-              {manifestInfo.timestamp && (
-                <div className="flex items-center">
-                  <Calendar className="h-4 w-4 mr-2 text-muted-foreground" />
-                  <span className="text-sm font-medium">タイムスタンプ:</span>
-                  <span className="ml-2">{formatDate(manifestInfo.timestamp)}</span>
-                </div>
-              )}
+              <div className="flex items-center">
+                <Calendar className="h-4 w-4 mr-2 text-muted-foreground" />
+                <span className="text-sm font-medium">タイムスタンプ:</span>
+                <span className="ml-2">{formattedTimestamp}</span>
+              </div>
             </div>
           </div>
         </CardContent>

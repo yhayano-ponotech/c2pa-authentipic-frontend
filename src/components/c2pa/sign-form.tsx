@@ -20,6 +20,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { CheckCircle2, AlertCircle, Download } from "lucide-react";
 import { FileInfo } from "@/components/c2pa/file-upload";
 import { SignData } from "@/lib/types";
+import { cn } from "@/lib/utils";
 
 // フォームのバリデーションスキーマ
 const formSchema = z.object({
@@ -192,9 +193,14 @@ export default function SignForm({ fileInfo, onSign }: SignFormProps) {
     <div className="space-y-6">
       {/* 署名結果の表示 */}
       {signResult && (
-        <Alert variant={signResult.success ? "success" : "destructive"}>
+        <Alert 
+          variant={signResult.success ? "default" : "destructive"}
+          className={cn(
+            signResult.success && "border-green-500 bg-green-50 text-green-800"
+          )}
+        >
           {signResult.success ? (
-            <CheckCircle2 className="h-4 w-4" />
+            <CheckCircle2 className="h-4 w-4 text-green-500" />
           ) : (
             <AlertCircle className="h-4 w-4" />
           )}

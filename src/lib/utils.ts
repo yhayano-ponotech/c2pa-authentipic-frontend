@@ -56,20 +56,24 @@ export function getTempFilePath(fileId: string): string {
  * 日付をフォーマットする関数
  */
 export function formatDate(dateString: string): string {
-  const date = new Date(dateString);
-  
-  if (isNaN(date.getTime())) {
-    return "無効な日付";
-  }
-  
-  return date.toLocaleString("ja-JP", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-  });
+    if (!dateString) {
+      return "日時情報なし";
+    }
+    
+    const date = new Date(dateString);
+    
+    if (isNaN(date.getTime())) {
+      return "無効な日付";
+    }
+    
+    return date.toLocaleString("ja-JP", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    });
 }
 
 /**

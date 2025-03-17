@@ -1,4 +1,3 @@
-
 import {
     Alert,
     AlertDescription,
@@ -27,6 +26,7 @@ import {
     AccordionTrigger 
   } from "@/components/ui/accordion";
   import { VerificationResult as VerificationResultType } from "@/lib/types";
+  import { cn } from "@/lib/utils";
   
   interface VerificationResultProps {
     verificationData: VerificationResultType;
@@ -45,8 +45,9 @@ import {
           title: "検証成功",
           description: "C2PA署名は有効です。",
           color: "text-green-500",
-          badgeVariant: "success" as const,
+          badgeVariant: "secondary" as const,
           badgeText: "有効",
+          bgColor: "border-l-green-500"
         };
       } else if (status === "warning") {
         return {
@@ -54,8 +55,9 @@ import {
           title: "警告あり",
           description: "C2PA署名に警告があります。",
           color: "text-yellow-500",
-          badgeVariant: "warning" as const,
+          badgeVariant: "outline" as const,
           badgeText: "警告",
+          bgColor: "border-l-yellow-500"
         };
       } else {
         return {
@@ -65,6 +67,7 @@ import {
           color: "text-red-500",
           badgeVariant: "destructive" as const,
           badgeText: "無効",
+          bgColor: "border-l-red-500"
         };
       }
     };
@@ -142,7 +145,7 @@ import {
                 <AccordionContent>
                   <div className="space-y-2 pl-2">
                     {warnings.map((warning, index) => (
-                      <Alert key={index} variant="warning">
+                      <Alert key={index} className="border-yellow-500 text-yellow-700">
                         <AlertDescription>{warning}</AlertDescription>
                       </Alert>
                     ))}
@@ -171,8 +174,8 @@ import {
         )}
   
         {/* 検証についての情報 */}
-        <Alert variant="info" className="bg-primary-50">
-          <Info className="h-4 w-4" />
+        <Alert className={cn("bg-blue-50 border-blue-200")}>
+          <Info className="h-4 w-4 text-blue-500" />
           <AlertTitle>C2PA検証について</AlertTitle>
           <AlertDescription>
             C2PA検証は、画像に埋め込まれたデジタル署名を検証することで、

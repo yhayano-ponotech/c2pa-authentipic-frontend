@@ -59,6 +59,35 @@ export const SUPPORTED_IMAGE_FORMATS = [
   }
 ];
 
+// サポートする証明書と鍵の形式
+export const SUPPORTED_CERTIFICATE_FORMATS = [
+  {
+    extension: '.pem',
+    mimeType: 'application/x-pem-file',
+    name: 'PEM証明書'
+  },
+  {
+    extension: '.crt',
+    mimeType: 'application/x-x509-ca-cert',
+    name: 'X.509証明書'
+  },
+  {
+    extension: '.cer',
+    mimeType: 'application/x-x509-ca-cert',
+    name: 'X.509証明書'
+  },
+  {
+    extension: '.pub',
+    mimeType: 'application/octet-stream',
+    name: '公開鍵'
+  },
+  {
+    extension: '.key',
+    mimeType: 'application/octet-stream',
+    name: '秘密鍵'
+  }
+];
+
 // アップロードファイルの最大サイズ（10MB）
 export const MAX_UPLOAD_SIZE = 10 * 1024 * 1024;
 

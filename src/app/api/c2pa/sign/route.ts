@@ -8,8 +8,8 @@ import { getTempFilePath, isValidFileId, generateUniqueId, getMimeType } from "@
 // これによりビルド時のエラーを避ける
 async function loadC2pa() {
   try {
-    const { createC2pa, createTestSigner, ManifestBuilder } = await import('c2pa-node');
-    return { createC2pa, createTestSigner, ManifestBuilder };
+    const { createC2pa, createTestSigner, ManifestBuilder, SigningAlgorithm } = await import('c2pa-node');
+    return { createC2pa, createTestSigner, ManifestBuilder, SigningAlgorithm };
   } catch (error) {
     console.error("C2PAモジュールのロードエラー:", error);
     throw new Error("C2PAモジュールのロードに失敗しました");
@@ -20,10 +20,15 @@ export async function POST(request: NextRequest) {
   try {
     // リクエストボディを取得
     const body = await request.json();
-    const { fileId, manifestData } = body;
+    const { fileId, manifestData, certificate, privateKey, useLocalSigner } = body;
 
-    console.log("受信したリクエストボディ:", JSON.stringify(body, null, 2));
-    console.log("manifestDataの内容:", JSON.stringify(manifestData, null, 2));
+    console.log("受信したリクエストボディ:", JSON.stringify({
+      fileId,
+      manifestData,
+      useLocalSigner,
+      hasCertificate: !!certificate,
+      hasPrivateKey: !!privateKey
+    }, null, 2));
 
     // fileIdのバリデーション
     if (!fileId || !isValidFileId(fileId)) {
@@ -45,6 +50,19 @@ export async function POST(request: NextRequest) {
         },
         { status: 400 }
       );
+    }
+    
+    // ローカル署名の場合、証明書と秘密鍵のバリデーション
+    if (useLocalSigner) {
+      if (!certificate || !privateKey) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: "ローカル署名には証明書と秘密鍵が必要です。",
+          },
+          { status: 400 }
+        );
+      }
     }
 
     // 一時ファイルのパスを取得
@@ -85,10 +103,43 @@ export async function POST(request: NextRequest) {
 
     try {
       // C2PAモジュールを動的にロード
-      const { createC2pa, createTestSigner, ManifestBuilder } = await loadC2pa();
+      const { createC2pa, createTestSigner, ManifestBuilder, SigningAlgorithm } = await loadC2pa();
 
-      // テスト署名者を作成
-      const signer = await createTestSigner();
+      // 署名者の作成
+      let signer;
+      
+      if (useLocalSigner && certificate && privateKey) {
+        console.log("ローカル署名者を使用します");
+        
+        try {
+          // PEMと秘密鍵の内容をそのままバッファに変換
+          const certificateBuffer = Buffer.from(certificate.content);
+          const privateKeyBuffer = Buffer.from(privateKey.content);
+          
+          // ローカル署名者を作成
+          signer = {
+            type: 'local' as const,
+            certificate: certificateBuffer,
+            privateKey: privateKeyBuffer,
+            algorithm: SigningAlgorithm.ES256,
+            tsaUrl: 'http://timestamp.digicert.com',
+          };
+          
+          console.log("証明書バッファ長:", certificateBuffer.length);
+          console.log("証明書の先頭:", certificateBuffer.toString().substring(0, 50));
+          console.log("秘密鍵バッファ長:", privateKeyBuffer.length);
+        } catch (err) {
+          console.error("証明書または秘密鍵の処理エラー:", err);
+          return NextResponse.json({
+            success: false,
+            error: "証明書または秘密鍵の処理に失敗しました: " + (err instanceof Error ? err.message : String(err)),
+          }, { status: 400 });
+        }
+      } else {
+        console.log("テスト署名者を使用します");
+        // テスト署名者を作成
+        signer = await createTestSigner();
+      }
 
       // C2PAインスタンスを作成
       const c2pa = createC2pa({ signer });
@@ -133,6 +184,7 @@ export async function POST(request: NextRequest) {
 
       try {
         // 署名を実行
+        console.log("署名処理開始...");
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const result = await c2pa.sign({
           asset,
@@ -159,9 +211,23 @@ export async function POST(request: NextRequest) {
         });
       } catch (signError) {
         console.error("署名実行エラー:", signError);
+        
+        // エラー内容を詳細に分析
+        let errorMessage = "署名処理に失敗しました";
+        if (signError instanceof Error) {
+          errorMessage += ": " + signError.message;
+          
+          // 原因分析を追加
+          if (signError.message.includes("PEM")) {
+            errorMessage += "。証明書または秘密鍵のフォーマットが正しくない可能性があります。有効なPEM形式の証明書と秘密鍵ファイルを使用してください。";
+          } else if (signError.message.includes("private key")) {
+            errorMessage += "。秘密鍵が無効または証明書と一致していない可能性があります。";
+          }
+        }
+        
         return NextResponse.json({
           success: false,
-          error: "署名処理に失敗しました: " + (signError instanceof Error ? signError.message : String(signError)),
+          error: errorMessage,
         }, { status: 500 });
       }
     } catch (c2paError) {

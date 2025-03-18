@@ -68,3 +68,27 @@ export interface C2paAssertion {
     errors?: string[];
     warnings?: string[];
   }
+
+  // 署名データの型
+  export interface SignData {
+    fileId: string;
+    manifestData: {
+      title: string;
+      creator?: string;
+      copyright?: string;
+      description?: string;
+      claimGenerator: string;
+      format?: string;
+      assertions: C2paAssertion[];
+      [key: string]: unknown;
+    };
+    certificate?: {
+      content: string; // PEMファイルの内容そのもの
+      name: string;
+    };
+    privateKey?: {
+      content: string; // 秘密鍵ファイルの内容そのもの
+      name: string;
+    };
+    useLocalSigner?: boolean;
+  }

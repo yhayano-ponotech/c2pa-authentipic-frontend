@@ -17,10 +17,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { LoadingSpinner } from "@/components/shared/loading-spinner";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { CheckCircle2, AlertCircle, Download } from "lucide-react";
+import { CheckCircle2, AlertCircle, Download, Info, Shield } from "lucide-react";
 import { FileInfo } from "@/components/c2pa/file-upload";
 import { SignData } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import CertificateUpload, { CertificateFile } from "./certificate-upload";
 
 // フォームのバリデーションスキーマ
 const formSchema = z.object({
@@ -45,6 +46,7 @@ const formSchema = z.object({
       },
       { message: "有効なJSONフォーマットではありません" }
     ),
+  useLocalSigner: z.boolean().default(false),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -61,6 +63,10 @@ export default function SignForm({ fileInfo, onSign }: SignFormProps) {
     downloadUrl?: string;
     error?: string;
   } | null>(null);
+  
+  // 証明書と秘密鍵ファイル
+  const [certificateFile, setCertificateFile] = useState<CertificateFile | null>(null);
+  const [privateKeyFile, setPrivateKeyFile] = useState<CertificateFile | null>(null);
 
   // フォーム初期化
   const form = useForm<FormValues>({
@@ -74,12 +80,16 @@ export default function SignForm({ fileInfo, onSign }: SignFormProps) {
       includeToolInfo: true,
       addCustomAssertion: false,
       customAssertionLabel: "",
-      customAssertionData: ""
+      customAssertionData: "",
+      useLocalSigner: false
     },
   });
 
   // カスタムアサーションフィールドの表示/非表示
   const showCustomAssertionFields = form.watch("addCustomAssertion");
+  
+  // ローカル署名者を使用するかどうか
+  const useLocalSigner = form.watch("useLocalSigner");
 
   // フォーム送信ハンドラ
   const onSubmit = async (data: FormValues) => {
@@ -159,11 +169,38 @@ export default function SignForm({ fileInfo, onSign }: SignFormProps) {
         }
       }
 
-      // 署名処理を実行
-      const result = await onSign({
+      // 署名データを準備
+      const signData: SignData = {
         fileId: fileInfo.id,
-        manifestData
-      });
+        manifestData,
+        useLocalSigner: data.useLocalSigner
+      };
+
+      // ローカル署名の場合、証明書と秘密鍵を追加
+      if (data.useLocalSigner) {
+        if (!certificateFile || !privateKeyFile) {
+          setSignResult({
+            success: false,
+            error: "ローカル署名を行うには証明書と秘密鍵の両方が必要です。"
+          });
+          setSigning(false);
+          return;
+        }
+        
+        // テキスト内容をそのまま送信
+        signData.certificate = {
+          content: certificateFile.content,
+          name: certificateFile.name
+        };
+        
+        signData.privateKey = {
+          content: privateKeyFile.content,
+          name: privateKeyFile.name
+        };
+      }
+
+      // 署名処理を実行
+      const result = await onSign(signData);
 
       setSignResult(result);
     } catch (error) {
@@ -373,6 +410,27 @@ export default function SignForm({ fileInfo, onSign }: SignFormProps) {
                   </FormItem>
                 )}
               />
+              
+              <FormField
+                control={form.control}
+                name="useLocalSigner"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center justify-between p-3 border rounded-md">
+                    <div className="space-y-0.5">
+                      <FormLabel>ローカル署名を使用</FormLabel>
+                      <FormDescription>
+                        テスト署名ではなく証明書と秘密鍵を使用したローカル署名を実行します
+                      </FormDescription>
+                    </div>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
 
               {/* カスタムアサーションフィールド */}
               {showCustomAssertionFields && (
@@ -420,15 +478,57 @@ export default function SignForm({ fileInfo, onSign }: SignFormProps) {
                   />
                 </div>
               )}
+              
+              {/* ローカル署名ファイルのアップロード */}
+              {useLocalSigner && (
+                <div className="space-y-4 p-3 border rounded-md">
+                  <div className="flex items-center mb-2">
+                    <Shield className="h-5 w-5 mr-2 text-primary" />
+                    <h4 className="font-medium">署名証明書と秘密鍵</h4>
+                  </div>
+                  
+                  <Alert className="bg-amber-50 border-amber-200 mb-4">
+                    <Info className="h-4 w-4 text-amber-600" />
+                    <AlertTitle>ローカル署名について</AlertTitle>
+                    <AlertDescription className="text-amber-800">
+                      ローカル署名では、お持ちの署名証明書(PEM)と秘密鍵(PUB)ファイルを使用して署名を行います。
+                      セキュリティの観点から、これらのファイルはサーバーには保存されず、署名処理にのみ使用されます。
+                    </AlertDescription>
+                  </Alert>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <FormLabel className="mb-2 block">証明書ファイル (PEM)</FormLabel>
+                      <CertificateUpload
+                        fileType="certificate"
+                        accept={["application/x-pem-file", "application/x-x509-ca-cert", ".pem", ".crt", ".cer"]}
+                        onFileSelected={setCertificateFile}
+                        onFileRemoved={() => setCertificateFile(null)}
+                        file={certificateFile}
+                      />
+                    </div>
+                    <div>
+                      <FormLabel className="mb-2 block">秘密鍵ファイル (PUB)</FormLabel>
+                      <CertificateUpload
+                        fileType="privateKey"
+                        accept={["application/octet-stream", ".pub", ".key", ".pem"]}
+                        onFileSelected={setPrivateKeyFile}
+                        onFileRemoved={() => setPrivateKeyFile(null)}
+                        file={privateKeyFile}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
           {/* フォーム送信ボタン */}
-          <div className="flex justify-center">
+          <div className="flex flex-col items-center space-y-2">
             <Button
               type="submit"
               size="lg"
-              disabled={signing}
+              disabled={signing || (useLocalSigner && (!certificateFile || !privateKeyFile))}
               className="min-w-32"
             >
               {signing ? (
@@ -437,9 +537,30 @@ export default function SignForm({ fileInfo, onSign }: SignFormProps) {
                   署名中...
                 </>
               ) : (
-                "C2PA情報を追加して署名"
+                <>
+                  {useLocalSigner && (certificateFile && privateKeyFile) && <Shield className="mr-2 h-4 w-4" />}
+                  {useLocalSigner ? 
+                    (certificateFile && privateKeyFile ? 
+                      "ローカル署名を実行" : 
+                      "証明書と秘密鍵が必要です") : 
+                    "C2PA情報を追加して署名"}
+                </>
               )}
             </Button>
+            
+            {useLocalSigner && (
+              <p className="text-xs text-muted-foreground">
+                {certificateFile && privateKeyFile ? 
+                  "本番環境用のローカル署名を実行します" : 
+                  "証明書と秘密鍵の両方をアップロードしてください"}
+              </p>
+            )}
+            
+            {!useLocalSigner && (
+              <p className="text-xs text-muted-foreground">
+                テスト用の署名証明書を使用して署名します
+              </p>
+            )}
           </div>
         </form>
       </Form>

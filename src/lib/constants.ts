@@ -1,10 +1,3 @@
-// 一時ファイルディレクトリのパス
-// サーバー側の一時ディレクトリを使用
-export const TEMP_DIR = process.env.TEMP_DIR || './tmp/c2pa-web-app-temp';
-
-// 一時ファイルの保持期間（24時間、ミリ秒単位）
-export const TEMP_FILE_TTL = 24 * 60 * 60 * 1000;
-
 // サポートする画像形式
 export const SUPPORTED_IMAGE_FORMATS = [
   {

@@ -11,6 +11,7 @@ import { LoadingSpinner } from "@/components/shared/loading-spinner";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
 import Image from "next/image";
+import { verifyC2paInfo } from "@/lib/api-client";
 import { VerificationResult as VerificationResultType } from "@/lib/types";
 
 export default function VerifyPage() {
@@ -35,15 +36,7 @@ export default function VerifyPage() {
     setError(null);
     
     try {
-      const response = await fetch("/api/c2pa/verify", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ fileId }),
-      });
-
-      const result = await response.json();
+      const result = await verifyC2paInfo(fileId);
 
       if (result.success) {
         if (!result.hasC2pa) {

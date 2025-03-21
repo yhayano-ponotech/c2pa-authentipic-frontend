@@ -9,6 +9,7 @@ import Link from "next/link";
 import FileUpload, { FileInfo } from "@/components/c2pa/file-upload";
 import SignForm from "@/components/c2pa/sign-form";
 import Image from "next/image";
+import { signWithC2pa } from "@/lib/api-client";
 import { SignData } from "@/lib/types";
 
 export default function SignPage() {
@@ -25,15 +26,7 @@ export default function SignPage() {
   // 署名処理のハンドラ
   const handleSign = async (formData: SignData) => {
     try {
-      const response = await fetch("/api/c2pa/sign", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(formData),
-      });
-
-      const result = await response.json();
+      const result = await signWithC2pa(formData);
 
       return {
         success: result.success,

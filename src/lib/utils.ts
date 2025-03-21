@@ -1,20 +1,11 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
-import crypto from "crypto";
-import { TEMP_DIR } from "./constants";
 
 /**
  * tailwindcssのクラス名をマージするためのユーティリティ関数
  */
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
-}
-
-/**
- * 一意のIDを生成する関数
- */
-export function generateUniqueId(): string {
-  return crypto.randomBytes(16).toString("hex");
 }
 
 /**
@@ -39,17 +30,6 @@ export function isValidFileId(fileId: string): boolean {
   // ここでは簡易的に、英数字とダッシュ、アンダースコア、ドット、拡張子のみを許可
   const validFilePattern = /^[a-zA-Z0-9_\-\.]+\.[a-zA-Z0-9]+$/;
   return validFilePattern.test(fileId);
-}
-
-/**
- * 一時ファイルのパスを取得する関数
- */
-export function getTempFilePath(fileId: string): string {
-  if (!isValidFileId(fileId)) {
-    throw new Error("無効なファイルIDです。");
-  }
-  // パスの結合をスラッシュで行う
-  return `${TEMP_DIR}/${fileId}`;
 }
 
 /**

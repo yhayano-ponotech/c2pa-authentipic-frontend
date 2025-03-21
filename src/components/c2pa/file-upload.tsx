@@ -8,7 +8,7 @@ import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Upload, File, AlertCircle, CheckCircle2 } from "lucide-react";
 import Image from "next/image";
-import { uploadFile } from "@/lib/api-client";
+import { uploadFile, readC2paInfo } from "@/lib/api-client";
 import { LoadingSpinner } from "@/components/shared/loading-spinner";
 import ManifestViewer from "@/components/c2pa/manifest-viewer";
 import { C2paManifestData } from "@/lib/types";
@@ -50,23 +50,15 @@ export default function FileUpload({
     setLoading(true);
     
     try {
-      const response = await fetch('/api/c2pa/read', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ fileId }),
-      });
+      const response = await readC2paInfo(fileId);
       
-      const data = await response.json();
-      
-      if (data.success) {
-        setHasC2pa(data.hasC2pa);
-        if (data.hasC2pa) {
-          setC2paData(data.manifest);
+      if (response.success) {
+        setHasC2pa(response.hasC2pa);
+        if (response.hasC2pa) {
+          setC2paData(response.manifest);
         }
       } else {
-        setUploadError(data.error || 'C2PAデータの読み取り中にエラーが発生しました。');
+        setUploadError(response.error || 'C2PAデータの読み取り中にエラーが発生しました。');
       }
     } catch (error) {
       console.error('C2PAデータ読み取りエラー:', error);
@@ -100,13 +92,16 @@ export default function FileUpload({
       setUploadProgress(100);
       setUploadSuccess(true);
       
+      // バックエンドから返されるURLは完全なURLなので、処理が不要
+      const fileUrl = response.url;
+      
       // レスポンスからファイル情報を設定
       const fileData: FileInfo = {
         id: response.fileId,
         fileName: response.fileName,
         fileType: response.fileType,
         fileSize: response.fileSize,
-        url: response.url
+        url: fileUrl
       };
       
       setFileInfo(fileData);

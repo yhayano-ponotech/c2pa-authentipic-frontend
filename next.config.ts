@@ -1,22 +1,25 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // 外部パッケージを直接Next.jsのサーバーで処理するように設定
-  serverExternalPackages: ['sharp', 'c2pa-node'],
+  // 外部パッケージについての設定
+  // c2pa-nodeはサーバーサイドからバックエンドに移行したため不要になった
+  serverExternalPackages: ['sharp'],
   
   // 画像最適化の設定
   images: {
     remotePatterns: [
       {
+        // ローカル開発環境のバックエンドサーバー
         protocol: 'http',
         hostname: 'localhost',
-        port: '3000',
+        port: '3001',
         pathname: '/api/temp/**',
       },
       {
+        // 本番環境のバックエンドサーバー（適宜変更してください）
         protocol: 'https',
-        hostname: 'localhost',
-        port: '3000',
+        hostname: process.env.NEXT_PUBLIC_API_HOSTNAME || 'api.example.com',
+        port: '',
         pathname: '/api/temp/**',
       }
     ],
@@ -34,26 +37,8 @@ const nextConfig: NextConfig = {
         fs: false,
         path: false,
         sharp: false,
-        '@img/sharp-darwin-x64': false,
-        '@img/sharp-linux-x64': false,
-        '@img/sharp-win32-x64': false,
       };
     }
-
-    // c2pa-nodeのネイティブモジュールの処理設定
-    config.module = config.module || {};
-    config.module.rules = config.module.rules || [];
-    config.module.rules.push({
-      test: /\.node$/,
-      use: [
-        {
-          loader: 'node-loader',
-          options: {
-            name: '[name].[ext]',
-          },
-        },
-      ],
-    });
 
     return config;
   },

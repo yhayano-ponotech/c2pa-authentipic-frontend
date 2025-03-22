@@ -66,16 +66,49 @@ export default function ManifestViewer({ manifest }: ManifestViewerProps) {
     );
   }
 
+  // データ構造をコンソールに出力（デバッグ用）
+  console.log("マニフェストデータ構造:", {
+    active_manifest_type: typeof manifest.active_manifest,
+    active_manifest_value: manifest.active_manifest,
+    has_manifests: !!manifest.manifests,
+    manifest_keys: Object.keys(manifest.manifests || {})
+  });
+
   const { active_manifest, manifests, validation_status } = manifest;
 
-  // マニフェストマップが存在しない場合のエラー表示
-  if (!manifests || !active_manifest || !manifests[active_manifest]) {
+  // マニフェストデータの各種エラーチェック
+  if (!manifests) {
     return (
       <Alert variant="destructive">
         <AlertCircle className="h-4 w-4" />
         <AlertTitle>エラー</AlertTitle>
         <AlertDescription>
-          マニフェストデータの形式が不正です。
+          マニフェストデータの形式が不正です: マニフェストリストが見つかりません。
+        </AlertDescription>
+      </Alert>
+    );
+  }
+
+  if (!active_manifest) {
+    return (
+      <Alert variant="destructive">
+        <AlertCircle className="h-4 w-4" />
+        <AlertTitle>エラー</AlertTitle>
+        <AlertDescription>
+          マニフェストデータの形式が不正です: アクティブなマニフェスト識別子が見つかりません。
+        </AlertDescription>
+      </Alert>
+    );
+  }
+
+  if (!manifests[active_manifest]) {
+    return (
+      <Alert variant="destructive">
+        <AlertCircle className="h-4 w-4" />
+        <AlertTitle>エラー</AlertTitle>
+        <AlertDescription>
+          マニフェストデータの形式が不正です: アクティブなマニフェスト ({active_manifest}) が見つかりません。
+          マニフェストキー: {Object.keys(manifests).join(', ') || 'なし'}
         </AlertDescription>
       </Alert>
     );
@@ -132,7 +165,7 @@ export default function ManifestViewer({ manifest }: ManifestViewerProps) {
   const assertions = activeManifestData.assertions || [];
 
   // 署名情報を整理
-  const signatureInfo = activeManifestData.signature || {};
+  const signatureInfo = activeManifestData.signature_info || {};
 
   // 材料（Ingredient）情報を整理
   const ingredients = activeManifestData.ingredients || [];

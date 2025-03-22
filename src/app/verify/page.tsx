@@ -42,11 +42,16 @@ export default function VerifyPage() {
         if (!result.hasC2pa) {
           setVerificationResult({
             isValid: false,
-            status: "invalid",
-            errors: ["このファイルにはC2PA情報が含まれていません。"],
+            validationDetails: {
+              status: "invalid",
+              errors: ["このファイルにはC2PA情報が含まれていません。"],
+              warnings: [],
+              manifestValidations: []
+            }
           });
         } else {
-          setVerificationResult(result.validationDetails);
+          // 注意: ここでAPIから返されるのは、既にVerificationResult型の完全なオブジェクト
+          setVerificationResult(result);
         }
       } else {
         setError(result.error || "検証中にエラーが発生しました。");

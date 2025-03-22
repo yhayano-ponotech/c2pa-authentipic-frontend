@@ -23,7 +23,10 @@ import {
   User,
   FileText,
   Hash,
-  Clock 
+  Clock,
+  Lock,
+  ShieldCheck,
+  ShieldX
 } from "lucide-react";
 import { 
   Accordion, 
@@ -60,7 +63,8 @@ export default function VerificationResult({
     warnings = [], 
     manifestValidations = [], 
     activeManifest, 
-    manifestStore 
+    manifestStore,
+    certificateTrust
   } = validationDetails || {};
 
   // 検証ステータスに基づくスタイルとアイコンを決定
@@ -137,6 +141,70 @@ export default function VerificationResult({
           )}
         </CardContent>
       </Card>
+
+      {/* 証明書信頼性情報 */}
+      {certificateTrust && (
+        <Card className={cn(
+          "border-l-4",
+          certificateTrust.isTrusted ? "border-l-green-500" : "border-l-orange-500"
+        )}>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg flex items-center">
+              {certificateTrust.isTrusted ? (
+                <ShieldCheck className="h-5 w-5 mr-2 text-green-500" />
+              ) : (
+                <ShieldX className="h-5 w-5 mr-2 text-orange-500" />
+              )}
+              証明書の信頼性
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {certificateTrust.isTrusted ? (
+                <div className="flex items-center text-green-600">
+                  <Lock className="h-4 w-4 mr-2" />
+                  <span>
+                    この証明書は信頼できる発行元からのものです
+                  </span>
+                </div>
+              ) : (
+                <div className="flex items-center text-orange-600">
+                  <AlertTriangle className="h-4 w-4 mr-2" />
+                  <span>
+                    {certificateTrust.errorMessage || "この証明書は既知の信頼できる発行元からのものではありません"}
+                  </span>
+                </div>
+              )}
+
+              {certificateTrust.issuer && (
+                <div className="flex items-center mt-2">
+                  <User className="h-4 w-4 mr-2 text-muted-foreground" />
+                  <span className="text-sm font-medium">発行元:</span>
+                  <span className="ml-2 text-sm">{certificateTrust.issuer}</span>
+                </div>
+              )}
+              
+              {certificateTrust.timestamp && (
+                <div className="flex items-center">
+                  <Calendar className="h-4 w-4 mr-2 text-muted-foreground" />
+                  <span className="text-sm font-medium">署名日時:</span>
+                  <span className="ml-2 text-sm">{formatDate(certificateTrust.timestamp)}</span>
+                </div>
+              )}
+
+              <Alert className="bg-blue-50 border-blue-200 dark:bg-blue-900/20 dark:border-blue-800 mt-2">
+                <Info className="h-4 w-4 text-blue-500" />
+                <AlertDescription className="text-sm">
+                  Content Credentials（C2PA）は、既知の証明書リストを使用して署名の信頼性を検証します。
+                  このリストには信頼できる発行元からの証明書が含まれています。
+                  証明書が信頼できないと表示されても、コンテンツ自体が不正であるということではなく、
+                  署名元が公式に認識されていないことを意味します。
+                </AlertDescription>
+              </Alert>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* アクティブマニフェスト情報 */}
       {activeManifest && (

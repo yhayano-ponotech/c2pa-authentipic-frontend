@@ -9,10 +9,11 @@ import FileUpload, { FileInfo } from "@/components/c2pa/file-upload";
 import VerificationResult from "@/components/c2pa/verification-result";
 import { LoadingSpinner } from "@/components/shared/loading-spinner";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, Shield, Info, ShieldCheck, ShieldX } from "lucide-react";
 import Image from "next/image";
 import { verifyC2paInfo } from "@/lib/api-client";
 import { VerificationResult as VerificationResultType } from "@/lib/types";
+import { CertificateTrustBadge } from "@/components/c2pa/certificate-trust-info";
 
 export default function VerifyPage() {
   const [selectedFile, setSelectedFile] = useState<FileInfo | null>(null);
@@ -64,6 +65,9 @@ export default function VerifyPage() {
     }
   };
 
+  // 証明書信頼性情報を取得
+  const certificateTrust = verificationResult?.validationDetails?.certificateTrust;
+
   return (
     <main className="container mx-auto px-4 py-8">
       <div className="flex flex-col space-y-6 max-w-4xl mx-auto">
@@ -78,6 +82,7 @@ export default function VerifyPage() {
         <p className="text-muted-foreground">
           このページでは、画像ファイルに埋め込まれたC2PA情報の署名を検証し、
           コンテンツの出所と完全性を確認することができます。
+          また、証明書が既知の信頼できる発行元からのものかも確認します。
         </p>
 
         <Separator />
@@ -123,6 +128,13 @@ export default function VerifyPage() {
                     <div className="text-sm text-muted-foreground">
                       <p className="font-medium truncate">{selectedFile.fileName}</p>
                       <p>{(selectedFile.fileSize / 1024).toFixed(2)} KB</p>
+                      
+                      {/* 証明書信頼性バッジ */}
+                      {certificateTrust && (
+                        <div className="mt-2">
+                          <CertificateTrustBadge trustInfo={certificateTrust} />
+                        </div>
+                      )}
                     </div>
                   </div>
                 </CardContent>
@@ -132,7 +144,10 @@ export default function VerifyPage() {
               <div className="md:col-span-2">
                 <Card>
                   <CardHeader>
-                    <CardTitle>検証結果</CardTitle>
+                    <CardTitle className="flex items-center">
+                      <Shield className="h-5 w-5 mr-2" />
+                      検証結果
+                    </CardTitle>
                     <CardDescription>
                       C2PA情報の署名検証結果です。
                     </CardDescription>
@@ -159,6 +174,49 @@ export default function VerifyPage() {
           )}
         </div>
 
+        {/* 強調された情報部分 - 証明書信頼性について */}
+        <Card className="bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800">
+          <CardHeader>
+            <CardTitle className="flex items-center text-xl">
+              <Info className="h-5 w-5 mr-2 text-blue-500" />
+              証明書信頼性検証について
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4 text-muted-foreground">
+              <p>
+                C2PA検証では、コンテンツの完全性（改ざんされていないこと）に加えて、
+                署名に使用された証明書の<strong>信頼性</strong>も確認します。
+              </p>
+              
+              <div className="flex items-center gap-4 mt-2">
+                <div className="flex items-center gap-2">
+                  <ShieldCheck className="h-5 w-5 text-green-500" />
+                  <span className="font-medium">信頼済み証明書:</span>
+                  <span>既知の信頼できる発行元からの証明書です。</span>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <ShieldX className="h-5 w-5 text-orange-500" />
+                  <span className="font-medium">未確認の証明書:</span>
+                  <span>信頼できる発行元リストに含まれていない証明書です。</span>
+                </div>
+              </div>
+              
+              <Alert className="bg-white dark:bg-slate-800 mt-2">
+                <AlertTitle>注意点</AlertTitle>
+                <AlertDescription>
+                  証明書が「未確認」と表示されても、内容そのものが不正や危険というわけではありません。
+                  単に署名元が公式な信頼リストに含まれていないだけです。
+                  Content Credentials（C2PA）は、今後もこの信頼リストを拡充していく予定です。
+                </AlertDescription>
+              </Alert>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* 情報セクション */}
         <div className="mt-4 p-6 bg-muted rounded-lg">
           <h2 className="text-xl font-semibold mb-4">C2PA検証について</h2>
@@ -174,6 +232,7 @@ export default function VerifyPage() {
             <ul className="list-disc pl-5 space-y-1">
               <li>デジタル署名の暗号的検証</li>
               <li>証明書チェーンの検証</li>
+              <li>証明書の発行元確認（トラストリスト検証）</li>
               <li>コンテンツハッシュの検証</li>
               <li>メタデータの整合性チェック</li>
             </ul>

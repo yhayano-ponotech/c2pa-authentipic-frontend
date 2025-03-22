@@ -85,7 +85,6 @@ export interface ManifestValidationDetail {
   url?: string | null;
 }
 
-// マニフェスト検証情報の型
 // 署名情報の型を定義
 export interface SignatureInfo {
   type?: string;
@@ -125,6 +124,14 @@ export interface ActiveManifestInfo {
   ingredientsCount: number;
 }
 
+// 証明書信頼性情報の型
+export interface CertificateTrustInfo {
+  isTrusted: boolean;
+  issuer: string | null;
+  timestamp: string | null;
+  errorMessage: string | null;
+}
+
 // 拡張された検証結果の型
 export interface ValidationDetails {
   status: string;
@@ -134,6 +141,7 @@ export interface ValidationDetails {
   manifestStore?: ManifestStoreInfo;
   activeManifest?: ActiveManifestInfo;
   details?: Record<string, unknown>;
+  certificateTrust?: CertificateTrustInfo;
 }
 
 // 検証結果の型

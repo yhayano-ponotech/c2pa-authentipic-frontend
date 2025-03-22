@@ -8,7 +8,6 @@ import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import FileUpload, { FileInfo } from "@/components/c2pa/file-upload";
 import SignForm from "@/components/c2pa/sign-form";
-import Image from "next/image";
 import { signWithC2pa } from "@/lib/api-client";
 import { SignData } from "@/lib/types";
 
@@ -97,11 +96,10 @@ export default function SignPage() {
                   {selectedFile && (
                     <div className="space-y-4">
                       <div className="relative h-48 rounded-md overflow-hidden border">
-                        <Image
+                        <img
                           src={selectedFile.url}
                           alt={selectedFile.fileName}
-                          fill
-                          className="object-contain"
+                          className="object-contain w-full h-full"
                         />
                       </div>
                       <div className="text-sm text-muted-foreground">

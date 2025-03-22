@@ -10,7 +10,6 @@ import VerificationResult from "@/components/c2pa/verification-result";
 import { LoadingSpinner } from "@/components/shared/loading-spinner";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle, Shield, Info, ShieldCheck, ShieldX } from "lucide-react";
-import Image from "next/image";
 import { verifyC2paInfo } from "@/lib/api-client";
 import { VerificationResult as VerificationResultType } from "@/lib/types";
 import { CertificateTrustBadge } from "@/components/c2pa/certificate-trust-info";
@@ -118,11 +117,10 @@ export default function VerifyPage() {
                 <CardContent>
                   <div className="space-y-4">
                     <div className="relative h-48 rounded-md overflow-hidden border">
-                      <Image
+                      <img
                         src={selectedFile.url}
                         alt={selectedFile.fileName}
-                        fill
-                        className="object-contain"
+                        className="object-contain w-full h-full"
                       />
                     </div>
                     <div className="text-sm text-muted-foreground">

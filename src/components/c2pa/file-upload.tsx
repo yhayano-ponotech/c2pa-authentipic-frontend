@@ -92,7 +92,7 @@ export default function FileUpload({
       setUploadProgress(100);
       setUploadSuccess(true);
       
-      // バックエンドから返されるURLは完全なURLなので、処理が不要
+      // バックエンドから返されるURLを使用しローカルでのプレビュー用に修正
       const fileUrl = response.url;
       
       // レスポンスからファイル情報を設定
@@ -147,7 +147,7 @@ export default function FileUpload({
     setUploadError(null);
     setFile(selectedFile);
     
-    // プレビュー用のURL生成
+    // アップロードされたファイルからローカルプレビューを生成
     const objectUrl = URL.createObjectURL(selectedFile);
     setPreview(objectUrl);
     
@@ -241,6 +241,7 @@ export default function FileUpload({
                   alt={file.name}
                   fill
                   className="object-contain"
+                  unoptimized={true}
                 />
               </div>
               

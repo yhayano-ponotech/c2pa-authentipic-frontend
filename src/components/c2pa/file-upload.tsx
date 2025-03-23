@@ -234,7 +234,7 @@ export default function FileUpload({
         <div className="space-y-6">
           <Card className="p-4">
             <div className="space-y-4">
-              {/* 画像プレビュー */}
+              {/* 画像プレビュー - crossOrigin属性を追加 */}
               <div className="relative h-64 overflow-hidden rounded-lg">
                 <Image
                   src={preview}
@@ -242,6 +242,7 @@ export default function FileUpload({
                   fill
                   className="object-contain"
                   unoptimized={true}
+                  crossOrigin="anonymous"
                 />
               </div>
               

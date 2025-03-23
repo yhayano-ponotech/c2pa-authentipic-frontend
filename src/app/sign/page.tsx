@@ -87,7 +87,7 @@ export default function SignPage() {
           {/* 署名タブ */}
           <TabsContent value="sign" className="mt-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {/* プレビュー部分 */}
+              {/* プレビュー部分 - crossOrigin属性を追加 */}
               <Card className="md:col-span-1">
                 <CardHeader>
                   <CardTitle>画像プレビュー</CardTitle>
@@ -100,6 +100,7 @@ export default function SignPage() {
                           src={selectedFile.url}
                           alt={selectedFile.fileName}
                           className="object-contain w-full h-full"
+                          crossOrigin="anonymous"
                         />
                       </div>
                       <div className="text-sm text-muted-foreground">

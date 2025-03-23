@@ -4,7 +4,32 @@
  */
 
 // バックエンドAPIのベースURL
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001/api';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
+
+/**
+ * URLをHTTPS形式に変換する
+ * @param url 変換するURL文字列
+ * @returns HTTPS形式のURL
+ */
+export function ensureHttps(url: string): string {
+  // すでにHTTPSならそのまま返す
+  if (url.startsWith('https://')) {
+    return url;
+  }
+  
+  // HTTPをHTTPSに置き換え
+  if (url.startsWith('http://')) {
+    return url.replace('http://', 'https://');
+  }
+  
+  // プロトコルがない場合はHTTPSを付加
+  if (url.startsWith('//')) {
+    return `https:${url}`;
+  }
+  
+  // その他の場合はそのまま返す
+  return url;
+}
 
 /**
  * ファイルをアップロードする関数
@@ -25,7 +50,14 @@ export async function uploadFile(file: File) {
     throw new Error(errorData.error || "ファイルのアップロードに失敗しました。");
   }
 
-  return await response.json();
+  const data = await response.json();
+  
+  // URLをHTTPSに変換
+  if (data.url) {
+    data.url = ensureHttps(data.url);
+  }
+  
+  return data;
 }
 
 /**
@@ -84,7 +116,14 @@ export async function signWithC2pa(data: {
     throw new Error(errorData.error || "C2PA署名に失敗しました。");
   }
 
-  return await response.json();
+  const result = await response.json();
+  
+  // ダウンロードURLをHTTPSに変換
+  if (result.downloadUrl) {
+    result.downloadUrl = ensureHttps(result.downloadUrl);
+  }
+  
+  return result;
 }
 
 /**
@@ -115,7 +154,7 @@ export async function verifyC2paInfo(fileId: string) {
  * @returns ファイルのURL
  */
 export function getTempFileUrl(fileName: string) {
-  return `${API_BASE_URL}/temp/${fileName}`;
+  return ensureHttps(`${API_BASE_URL}/temp/${fileName}`);
 }
 
 /**
@@ -124,5 +163,5 @@ export function getTempFileUrl(fileName: string) {
  * @returns ダウンロードURL
  */
 export function getDownloadUrl(fileName: string) {
-  return `${API_BASE_URL}/download?file=${fileName}`;
+  return ensureHttps(`${API_BASE_URL}/download?file=${fileName}`);
 }
